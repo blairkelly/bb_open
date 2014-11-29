@@ -1,7 +1,7 @@
 // https://github.com/blairkelly/bb_open.git
 //var b = require('bonescript');
 var b = require('octalbonescript');
-var socket = require('socket.io-client')('http://10.0.1.7:3000');
+var socket = require('socket.io-client')('http://10.0.1.5:3000');
 
 //var led = "P8_10";
 //var servo_pin = "P9_14";
@@ -12,25 +12,48 @@ var socket = require('socket.io-client')('http://10.0.1.7:3000');
 //b.digitalWrite(led, false);
 
 var SERVO_PIN = 'P9_14';
-var duty_min = 0.03;
-var position = 0;
-var increment = 0.1;
+var servo_is_ready = false;
+var servo_name = "HS-645MG";
+var servo_min = 0.037;
+var servo_max = 0.157;
+var servo_range = servo_max - servo_min;
+var servo_mid = servo_min + (servo_range / 2);
 
-b.pinMode(SERVO_PIN, b.OUTPUT);
-//b.analogWrite(SERVO, 0.5, 60);
+b.pinMode(SERVO_PIN, b.OUTPUT, function () {
+	console.log('done setting SERVO pin mode');
+	//var duty_cycle = (position*0.115) + duty_min;
+	servo_is_ready = true;
+	console.log('servo is ready...');
+	b.analogWrite(SERVO_PIN, servo_mid, 60, function (report) {
+		
+	});
+});
+
+var moveit = function () {
+	console.log("current_pos: " + current_pos);
+	b.analogWrite(SERVO_PIN, current_pos, 60, function (report) {
+		setTimeout(function () {
+			if (current_pos < servo_max) {
+				current_pos+=0.001;
+				moveit();
+			}
+		}, 250);
+	});
+}
 
 var axes_ctrl = function (axes, value) {
 	value = (parseFloat(value) + 1) / 2;
 
 	if (axes == '2') {
 		//RX
-
+		var servo_setting = (value * servo_range) + servo_min;
+		b.analogWrite(SERVO_PIN, servo_setting, 60);
 	}
 }
 var throttle_ctrl = function (throttle, value) {
 	value = parseFloat(value);
 	if (throttle == 'RT') {
-		console.log(value);
+
 	}
 }
 var btn_ctrl = function (btn, value) {
