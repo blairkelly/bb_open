@@ -4,19 +4,19 @@ var b = require('octalbonescript');
 var socket = require('socket.io-client')('http://10.0.1.7:3000');
 
 //var led = "P8_10";
-var led = "P9_14";
+//var servo_pin = "P9_14";
 
-b.pinMode(led, 'out', function () {
-	console.log('done setting pin mode');
-});
+//b.pinMode(led, 'out', function () {
+//	console.log('done setting pin mode');
+//});
 //b.digitalWrite(led, false);
 
-// var SERVO = 'P9_14';
-// var duty_min = 0.03;
-// var position = 0;
-// var increment = 0.1;
+var SERVO_PIN = 'P9_14';
+var duty_min = 0.03;
+var position = 0;
+var increment = 0.1;
 
-//b.pinMode(SERVO, b.OUTPUT);
+b.pinMode(SERVO_PIN, b.OUTPUT);
 //b.analogWrite(SERVO, 0.5, 60);
 
 var axes_ctrl = function (axes, value) {
