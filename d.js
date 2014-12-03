@@ -3,42 +3,62 @@
 var b = require('octalbonescript');
 var socket = require('socket.io-client')('http://10.0.1.5:3000');
 
-//var led = "P8_10";
-//var servo_pin = "P9_14";
-
-//b.pinMode(led, 'out', function () {
-//	console.log('done setting pin mode');
-//});
-//b.digitalWrite(led, false);
 
 var SERVO_PIN = 'P9_14';
-var servo_is_ready = false;
-var servo_name = "HS-645MG";
-var servo_min = 0.037;
-var servo_max = 0.157;
-var servo_range = servo_max - servo_min;
-var servo_mid = servo_min + (servo_range / 2);
 
-b.pinMode(SERVO_PIN, b.OUTPUT, function () {
-	console.log('done setting SERVO pin mode');
-	//var duty_cycle = (position*0.115) + duty_min;
-	servo_is_ready = true;
-	console.log('servo is ready...');
-	b.analogWrite(SERVO_PIN, servo_mid, 60, function (report) {
-		
-	});
-});
+var generic_servo_profiles = {
+	'HS-645MG': {
+		min: 0.037,
+		max: 0.157,
+		freq: 60,
+	},
+	'HS-85MG': {
+		min: 0.030,
+		max: 0.140,
+		freq: 60,
+	}
+}
 
-var moveit = function () {
-	console.log("current_pos: " + current_pos);
-	b.analogWrite(SERVO_PIN, current_pos, 60, function (report) {
-		setTimeout(function () {
-			if (current_pos < servo_max) {
-				current_pos+=0.001;
-				moveit();
-			}
-		}, 250);
-	});
+var servos = {
+	steering: {
+		name: 'steering',
+		pin: 'P9_14',
+		min: 0.030,
+		max: 0.140,
+		freq: 60,
+		ready: false,
+	}	
+}
+
+var set_servo_ranges_and_mids = function (servos_obj) {
+	for (servo_name in servos_obj) {
+		var _servo = servos_obj[servo_name];
+		_servo.range = _servo.max - _servo.min;
+		_servo.mid = _servo.min + (_servo.range / 2);
+	}
+}
+
+set_servo_ranges_and_mids(generic_servo_profiles);
+set_servo_ranges_and_mids(servos);
+console.log(servos);
+
+var set_servo_pinmodes = function (servos_obj) {
+	for (servo_name in servos_obj) {
+		var _servo = servos_obj[servo_name];
+		b.pinMode(_servo.pin, b.OUTPUT, function () {
+			console.log(servo_name + ' servo output READY...');
+			_servo.ready = true;
+		});
+	}
+}
+set_servo_pinmodes(servos);
+
+var write_servo = function (_servo, percent, callback) {
+	if (_servo.ready) {
+		var setting = _servo.min + (percent * _servo.range);
+		//console.log('writing to '+_servo.name+': ' + setting);
+		b.analogWrite(_servo.pin, setting, _servo.freq, callback);
+	}
 }
 
 var axes_ctrl = function (axes, value) {
@@ -46,8 +66,7 @@ var axes_ctrl = function (axes, value) {
 
 	if (axes == '2') {
 		//RX
-		var servo_setting = (value * servo_range) + servo_min;
-		b.analogWrite(SERVO_PIN, servo_setting, 60);
+		write_servo(servos.steering, value);
 	}
 }
 var throttle_ctrl = function (throttle, value) {
