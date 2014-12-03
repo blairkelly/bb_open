@@ -3,8 +3,16 @@
 var b = require('octalbonescript');
 var socket = require('socket.io-client')('http://10.0.1.5:3000');
 
-
-var SERVO_PIN = 'P9_14';
+var throttle_val = 0.5;
+//vehicle info object
+var vio = {
+	throttle: {
+		center: 0.5,
+		value: 0.5,
+		fwd: 0,
+		rev: 0,
+	}
+}
 
 var generic_servo_profiles = {
 	'HS-645MG': {
@@ -19,15 +27,25 @@ var generic_servo_profiles = {
 	}
 }
 
+//steering extremes, 0.047 to 0.091
 var servos = {
 	steering: {
 		name: 'steering',
 		pin: 'P9_14',
-		min: 0.030,
-		max: 0.140,
+		min: 0.050,
+		max: 0.080,
 		freq: 60,
 		ready: false,
-	}	
+	},
+	throttle: {
+		name: 'throttle',
+		pin: 'P9_16',
+		min: 0.037,
+		max: 0.157,
+		freq: 60,
+		ready: false,
+		center: 0.5,
+	},
 }
 
 var set_servo_ranges_and_mids = function (servos_obj) {
@@ -43,12 +61,23 @@ set_servo_ranges_and_mids(servos);
 console.log(servos);
 
 var set_servo_pinmodes = function (servos_obj) {
+	//the bizarre looping I have here is due
+	//to a strange bug I'm encountering.
+
 	for (servo_name in servos_obj) {
 		var _servo = servos_obj[servo_name];
-		b.pinMode(_servo.pin, b.OUTPUT, function () {
-			console.log(servo_name + ' servo output READY...');
-			_servo.ready = true;
-		});
+		if (!_servo.ready) {
+			console.log("SETTING PINMODE: " + servo_name);
+			b.pinMode(_servo.pin, b.OUTPUT, function () {
+				console.log(servo_name + ' READY...');
+				_servo.ready = true;
+				var first_val = _servo.center || 0.5;
+				console.log("Writing " + first_val + " to " + servo_name);
+				write_servo(_servo, first_val);
+				set_servo_pinmodes(servos_obj);
+			});
+			return null;
+		}
 	}
 }
 set_servo_pinmodes(servos);
@@ -56,7 +85,7 @@ set_servo_pinmodes(servos);
 var write_servo = function (_servo, percent, callback) {
 	if (_servo.ready) {
 		var setting = _servo.min + (percent * _servo.range);
-		//console.log('writing to '+_servo.name+': ' + setting);
+		console.log("setting "+_servo.name+": " + setting);
 		b.analogWrite(_servo.pin, setting, _servo.freq, callback);
 	}
 }
@@ -72,8 +101,17 @@ var axes_ctrl = function (axes, value) {
 var throttle_ctrl = function (throttle, value) {
 	value = parseFloat(value);
 	if (throttle == 'RT') {
-
+		vio.throttle.fwd = value;
 	}
+	if (throttle == 'LT') {
+		vio.throttle.rev = value;
+	}
+	vio.throttle.val = servos.throttle.center + (vio.throttle.fwd * (1-servos.throttle.center));
+	if (vio.throttle.rev) {
+		vio.throttle.val = vio.throttle.val - (vio.throttle.rev * vio.throttle.val);
+	}
+	console.log(vio.throttle.val);
+	write_servo(servos.throttle, vio.throttle.val);
 }
 var btn_ctrl = function (btn, value) {
 	var state = (value === 'true');
