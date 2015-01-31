@@ -1,7 +1,7 @@
 // https://github.com/blairkelly/bb_open.git
 //var b = require('bonescript');
 var b = require('octalbonescript');
-var socket = require('socket.io-client')('http://10.0.1.14:3000');
+var socket = require('socket.io-client')('http://www.blairkelly.ca:3000');
 
 var throttle_val = 0.5;
 //vehicle info object
