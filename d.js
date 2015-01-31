@@ -85,7 +85,7 @@ set_servo_pinmodes(servos);
 var write_servo = function (_servo, percent, callback) {
 	if (_servo.ready) {
 		var setting = _servo.min + (percent * _servo.range);
-		console.log("setting "+_servo.name+": " + setting);
+		//console.log("setting "+_servo.name+": " + setting);
 		b.analogWrite(_servo.pin, setting, _servo.freq, callback);
 	}
 }
